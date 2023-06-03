@@ -29,10 +29,10 @@ dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
 async def on_startup(dp):
-    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="Bot has been started")
+    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="Activated GPT-Sentiment-Bot")
 
 async def on_shutdown(dp, scheduler):
-    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="Bot has been stopped")
+    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="Deactivated GPT-Sentiment-Bot")
 
     # Remove all handlers
     dp.message_handlers.clear()
@@ -53,7 +53,7 @@ import requests
 import requests
 
 async def verify_symbol(symbol):
-    API_URL = f"https://eodhistoricaldata.com/api/news?api_token={EOD_API_KEY}&s={symbol}.US&&limit=10"
+    API_URL = f"https://eodhistoricaldata.com/api/news?api_token={EOD_API_KEY}&s={symbol}&&limit=3"
 
     response = requests.get(API_URL)
     data = response.json()
@@ -159,6 +159,9 @@ def parse_companies_input(input_str: str) -> Dict[str, str]:
 @dp.message_handler(commands=['help'])
 async def help(message: types.Message):
     message_text = ("Here are the available commands:\n\n"
+                    "SRC1=https://eodhistoricaldata.com/"
+                    "SRC2=https://platform.openai.com/"
+                    "SRC3=https://core.telegram.org/"
                     "/get_list_sentiments - Run sentiment analysis on stocks being tracked.\n\n"
                     "/list_companies - List all the companies currently being tracked.\n\n"
                     "/add_company <company_ticker or comma-separated list of tickers> Add a company or multiple to the tracking list. Replace <company_ticker> with the actual stock ticker.\n\n"
@@ -174,7 +177,7 @@ async def help(message: types.Message):
 def get_news_headlines_for_companies(companies: Dict[str, str]):
     headlines = {}
     for symbol, _ in companies.items():  # Extract the symbol and ignore the company name
-        url = f"https://eodhistoricaldata.com/api/news?api_token={EOD_API_KEY}&s={symbol}.US&&limit=100"
+        url = f"https://eodhistoricaldata.com/api/news?api_token={EOD_API_KEY}&s={symbol}&&limit=3"
 
         response = requests.get(url)
 
@@ -225,7 +228,7 @@ def assign_sentiment_score(sentiment):
         return 0
 
 async def send_summary_message(sentiment_scores):
-    message = "Daily Stock Sentiment Summary:\n\n"
+    message = "Stock Sentiment Score:\n\n"
     for company, score in sentiment_scores.items():
         message += f"{company}: {score}\n"
     await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
