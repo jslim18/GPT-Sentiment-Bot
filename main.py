@@ -133,7 +133,8 @@ async def get_sentiments(message: types.Message):
 @dp.message_handler(commands=['get_sentiment'])
 async def get_sentiment(message: types.Message):
     symbols_arg = message.get_args()
-    symbols = [symbol.strip().upper() for symbol in symbols_arg.split(',')]
+    symbols = [symbol.strip().upper() for symbol in symbols_arg.split(',').split('.')[0]]
+    regions = [region.strip().upper() for region in symbols_arg.split(',').split('.')[1]]
 
     if not symbols:
         await message.reply("Please provide at least one company symbol separated by commas.")
