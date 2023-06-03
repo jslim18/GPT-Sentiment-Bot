@@ -1,1 +1,18 @@
-test
+
+ISSUE#01: To add /get_status for all connections used herein because you never know you run of out credit balance or service is down
+
+  Eg. Connection OpenAI: [PASS]
+  Eg. Connection EODHD: [FAIL]
+
+ISSUE#02: /get_sentiment is capable of taking US market enquiry but not other region due to EODHD API accept in such format {symbol}.{region} and got JSON syntax error if pass along the dot. Update all other functions in the Python code too
+
+  Eg. AMD.US
+  Eg. 1818.KLSE
+  Eg. G13.SG
+
+ISSUE#03: Right before displaying  sendMessage() result Stock Sentiment Score: AMD: 1.0 in Telegram. The flow of Telegram message must show title of headlines in between each thread descending chronological order. 
+
+  Eg. YYMMDD-HHMM: Headline Title1
+  Eg. YYMMDD-HHMM: Headline Title2
+  Eg. YYMMDD-HHMM: Headline Title3
+  
