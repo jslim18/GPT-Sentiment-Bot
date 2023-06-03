@@ -10,7 +10,7 @@ ISSUE#02: /get_sentiment is capable of taking US market enquiry but not other re
   Eg. 1818.KLSE
   Eg. G13.SG
 
-ISSUE#03: Right before displaying  sendMessage() result Stock Sentiment Score: AMD: 1.0 in Telegram. The flow of Telegram message must show title of headlines in between each thread descending chronological order. 
+ISSUE#03: Right before displaying sendMessage() result Stock Sentiment Score: AMD: 1.0 in Telegram. The flow of Telegram message must show title of headlines in between each thread descending chronological order. It is wrong to jump to conclusion straightaway in user mode when interacts with the Bot
 
   Eg. YYMMDD-HHMM: Headline Title1
   Eg. YYMMDD-HHMM: Headline Title2
