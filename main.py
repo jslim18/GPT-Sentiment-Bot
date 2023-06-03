@@ -52,8 +52,8 @@ import requests
 
 import requests
 
-async def verify_symbol(symbol):
-    API_URL = f"https://eodhistoricaldata.com/api/news?api_token={EOD_API_KEY}&s={symbol}&&limit=3"
+async def verify_symbol(symbol,region):
+    API_URL = f"https://eodhistoricaldata.com/api/news?api_token={EOD_API_KEY}&s={symbol}.{region}&&limit=3"
 
     response = requests.get(API_URL)
     data = response.json()
@@ -177,14 +177,14 @@ async def help(message: types.Message):
 def get_news_headlines_for_companies(companies: Dict[str, str]):
     headlines = {}
     for symbol, _ in companies.items():  # Extract the symbol and ignore the company name
-        url = f"https://eodhistoricaldata.com/api/news?api_token={EOD_API_KEY}&s={symbol}&&limit=3"
+        url = f"https://eodhistoricaldata.com/api/news?api_token={EOD_API_KEY}&s={symbol}.{region}&&limit=3"
 
         response = requests.get(url)
 
         try:
             all_headlines = response.json()
         except json.JSONDecodeError:
-            print(f"Error decoding JSON for {symbol}: {response.content}")
+            print(f"Error decoding JSON for {symbol}.{region}: {response.content}")
             all_headlines = []
 
         est = pytz.timezone("US/Eastern")
