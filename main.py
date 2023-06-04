@@ -299,9 +299,20 @@ async def analyze_sentiments_for_companies(companies):
             average_score = sum(scores) / len(scores) if scores else 0
             sentiment_scores[company] = round(average_score, 2)
 
+###            
+    for symbol, news in headlines.items():
+        if news:
+            sorted_news = sorted(news, key=lambda x: x["date"], reverse=True)
+            for headline in sorted_news:
+                date_str = datetime.datetime.strptime(headline["date"], "%Y-%m-%dT%H:%M:%S%z").strftime("%y%m%d-%H%M")
+                await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=f"{date_str}: {headline['title']}")
+        else:
+            await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=f"No news found for {symbol}")
+###
+
     await send_summary_message(sentiment_scores)
 
-
+    
 def today_9am_est():
     return datetime.datetime.now(pytz.timezone("US/Eastern")).replace(hour=9, minute=25, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
 
