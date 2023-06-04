@@ -5,7 +5,9 @@ import json
 import requests
 import pytz
 import openai
+import aiohttp
 from openai import InvalidRequestError
+from openai import OpenAIApiException
 from typing import Dict, Any
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types, executor
@@ -30,6 +32,7 @@ dp.middleware.setup(LoggingMiddleware())
 
 async def on_startup(dp):
     await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="Activated GPT-Sentiment-Bot")
+    await get_status(dp)
 
 async def on_shutdown(dp, scheduler):
     await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="Deactivated GPT-Sentiment-Bot")
@@ -61,6 +64,41 @@ async def verify_symbol(symbol,region):
     if data:  # Check if the response has any data (i.e., the symbol exists)
         return True
     return False
+
+
+async def check_openai_connection():
+    try:
+        await openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "system", "content": "Ping"}],
+        )
+        return "[PASS]"
+    except OpenAIApiException:
+        return "[FAIL]"
+
+async def check_eodhd_connection():
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://eodhistoricaldata.com/api/ping?api_token={EOD_API_KEY}") as response:
+                if response.status == 200:
+                    return "[PASS]"
+                else:
+                    return "[FAIL]"
+    except aiohttp.ClientError:
+        return "[FAIL]"
+    
+    
+@dp.message_handler(commands=['get_status'])
+async def get_status(message: types.Message):
+    openai_status = await check_openai_connection()
+    eodhd_status = await check_eodhd_connection()
+
+    status_message = (
+        f"Connection OpenAI: {openai_status}\n"
+        f"Connection EODHD: {eodhd_status}\n"
+    )
+
+    await message.reply(status_message)
 
 
 @dp.message_handler(commands=['add_company'])
