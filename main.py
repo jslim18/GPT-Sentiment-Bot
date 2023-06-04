@@ -5,9 +5,7 @@ import json
 import requests
 import pytz
 import openai
-import aiohttp
 from openai import InvalidRequestError
-from openai import OpenAIApiException
 from typing import Dict, Any
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types, executor
@@ -68,23 +66,18 @@ async def verify_symbol(symbol,region):
 
 async def check_openai_connection():
     try:
-        await openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": "Ping"}],
-        )
+        response = requests.get("https://api.openai.com/")
+        response.raise_for_status()
         return "[PASS]"
-    except OpenAIApiException:
+    except requests.exceptions.RequestException:
         return "[FAIL]"
 
 async def check_eodhd_connection():
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://eodhistoricaldata.com/api/ping?api_token={EOD_API_KEY}") as response:
-                if response.status == 200:
-                    return "[PASS]"
-                else:
-                    return "[FAIL]"
-    except aiohttp.ClientError:
+        response = requests.get(f"https://eodhistoricaldata.com/api/ping?api_token={EOD_API_KEY}")
+        response.raise_for_status()
+        return "[PASS]"
+    except requests.exceptions.RequestException:
         return "[FAIL]"
     
     
