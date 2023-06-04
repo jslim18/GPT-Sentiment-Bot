@@ -171,27 +171,34 @@ async def get_sentiments(message: types.Message):
 @dp.message_handler(commands=['get_sentiment'])
 async def get_sentiment(message: types.Message):
     symbols_arg = message.get_args()
-    symbols = [symbol.strip().upper() for symbol in symbols_arg.split(',').split('.')[0]]
-    regions = [region.strip().upper() for region in symbols_arg.split(',').split('.')[1]]
+    symbol_region_pairs = symbols_arg.split(',')
+    
+    companies = {}
+    for pair in symbol_region_pairs:
+        pair_items = pair.split('.')
+        if len(pair_items) == 2:
+            symbol = pair_items[0].strip().upper()
+            region = pair_items[1].strip().upper()
+            companies[symbol] = region
 
-    if not symbols:
-        await message.reply("Please provide at least one company symbol separated by commas.")
+    if not companies:
+        await message.reply("Please provide at least one company symbol and region separated by commas (e.g., AMD.US, 1818.KLSE, G13.SG).")
     else:
-        companies = {symbol: symbol for symbol in symbols}
         await analyze_sentiments_for_companies(companies)
 
 
-def parse_companies_input(input_str: str) -> Dict[str, str]:
-    companies = {}
-    company_pairs = input_str.split(';')
-    for pair in company_pairs:
-        pair_items = pair.split(',')
-        if len(pair_items) != 2:
-            continue
-        symbol = pair_items[0].strip().upper()
-        name = pair_items[1].strip()
-        companies[symbol] = name
-    return companies
+
+#def parse_companies_input(input_str: str) -> Dict[str, str]:
+#   companies = {}
+#   company_pairs = input_str.split(';')
+#    for pair in company_pairs:
+#        pair_items = pair.split(',')
+#        if len(pair_items) != 2:
+#            continue
+#        symbol = pair_items[0].strip().upper()
+#        name = pair_items[1].strip()
+#        companies[symbol] = name
+#    return companies
 
 
 
@@ -215,7 +222,7 @@ async def help(message: types.Message):
 
 def get_news_headlines_for_companies(companies: Dict[str, str]):
     headlines = {}
-    for symbol, _ in companies.items():  # Extract the symbol and ignore the company name
+    for symbol, region in companies.items():
         url = f"https://eodhistoricaldata.com/api/news?api_token={EOD_API_KEY}&s={symbol}.{region}&&limit=3"
 
         response = requests.get(url)
