@@ -30,10 +30,10 @@ dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
 async def on_startup(dp):
-    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="Bot has been started")
+    await bot_send_message("Bot has been started")
 
 async def on_shutdown(dp, scheduler):
-    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="Bot has been stopped")
+    await bot_send_message("Bot has been stopped")
 
     # Remove all handlers
     dp.message_handlers.clear()
@@ -53,6 +53,16 @@ import requests
 
 import requests
 
+async def message_reply(message: types.Message, response):
+    for i in range(0, len(response), 4095):
+        await message.reply(response[i:i+4095])
+        time.sleep(1)
+
+async def bot_send_message(response):
+    for i in range(0, len(response), 4095):
+        await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=response[i:i+4095])
+        time.sleep(1)
+
 @dp.message_handler(commands=['help'])
 async def help(message: types.Message):
     message_text = ("Here are the available commands:\n\n"
@@ -66,7 +76,7 @@ async def help(message: types.Message):
                     "\nOther Examples:\n"
                     "/add_company AAPL.US\n"
                     "/remove_company APPL.US")
-    await message.reply(message_text)
+    await message_reply(message, message_text)
 
 
 def parse_companies_input(input_str: str) -> Dict[str, str]:
@@ -110,7 +120,7 @@ async def get_status(message: types.Message):
         f"Connection EODHD: {eodhd_status}\n"
     )
 
-    await message.reply(status_message)
+    await message_reply(message, status_message)
 ## /ISSUE1
 
 ## ISSUE 2
@@ -156,7 +166,7 @@ def verify_symbol(symbol):
 @dp.message_handler(commands=['add_company'])
 async def add_company(message: types.Message):
     input_symbols = message.get_args().split(",")
-    symbols = [symbol.upper() for symbol in input_symbols]
+    symbols = [symbol.strip().upper() for symbol in input_symbols]
 
     COMPANIES = load_ticker_list()
 
@@ -184,37 +194,37 @@ async def add_company(message: types.Message):
     if invalid_symbols:
         response_text += f"\n{', '.join(invalid_symbols)} are not valid symbols."
 
-    await message.reply(response_text.strip())
+    await message_reply(message, response_text.strip())
 
 @dp.message_handler(commands=['remove_company'])
 async def remove_company(message: types.Message):
-    symbol = message.get_args().split()[0].upper()
+    symbol = message.get_args().split()[0].strip().upper()
 
     COMPANIES = load_ticker_list()
 
     if symbol not in COMPANIES:
-        await message.reply(f"{symbol} is not in the list.")
+        await message_reply(message, f"{symbol} is not in the list.")
     else:
         COMPANIES.pop(symbol)
         save_ticker_list(COMPANIES)
-        await message.reply(f"Removed {symbol} from the list.")
+        await message_reply(message, f"Removed {symbol} from the list.")
 
 #
 @dp.message_handler(commands=['list_companies'])
 async def list_companies(message: types.Message):
     COMPANIES = load_ticker_list()  # Load the latest ticker list from the JSON file
     if not COMPANIES:
-        await message.reply("No companies in the list.")
+        await message_reply(message, "No companies in the list.")
     else:
         company_list = "\n".join([f"{symbol}" for symbol in COMPANIES.keys()])
-        await message.reply(f"List of companies:\n{company_list}")
+        await message_reply(message, f"List of companies:\n{company_list}")
 
 @dp.message_handler(commands=['get_list_sentiments'])
 async def get_sentiments(message: types.Message):
     COMPANIES = load_ticker_list()  # Load the latest ticker list from the JSON file
 
     if not COMPANIES:
-        await message.reply("The list of companies is empty.")
+        await message_reply(message, "The list of companies is empty.")
     else:
         await analyze_sentiments_for_companies(COMPANIES)
         
@@ -229,8 +239,8 @@ async def analyze_sentiments_for_companies(companies, header_amount=-100):
 
         if num_headlines == 0:
             sentiment_scores[company] = "0 headlines"
-            await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=f"No headlines.")
-            break
+            await bot_send_message(f"{company}: No headlines")
+
         else:
             scores = []
             for headline in company_headlines:
@@ -251,8 +261,7 @@ async def analyze_sentiments_for_companies(companies, header_amount=-100):
             # you change the values to Positive: 1, Neutral: 0.5, Negative: 0, Else: 0.5
             average_score = sum(scores) / len(scores) if scores else 0
             sentiment_scores[company] = company_headlines, round(average_score, 2)
-    else:
-        await send_summary_message(sentiment_scores)
+            await send_summary_message(sentiment_scores)
 
 def get_news_headlines_for_companies(companies: Dict[str, str], header_amount=-100):
     headlines = {}
@@ -276,7 +285,7 @@ def get_news_headlines_for_companies(companies: Dict[str, str], header_amount=-1
 
             filtered_headlines = [headline for headline in all_headlines if start_time <= datetime.datetime.strptime(headline["date"], "%Y-%m-%dT%H:%M:%S%z") <= end_time]
         else:
-            filtered_headlines = all_headlines
+            filtered_headlines = [headline for headline in all_headlines]
 
         headlines[symbol] = filtered_headlines
 
@@ -324,45 +333,43 @@ async def send_summary_message(sentiment_scores):
 
         dates = []
         for headline in score[0]:
+            print(headline)
             date_string = headline["date"]
             datetime_obj = datetime.datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S%z")
-            formatted_date = datetime_obj.strftime("%y-%m-%d %H:%M")
             dates.append(datetime_obj)
 
-        dates_headlines = sorted(tuple(zip(dates, score[0])))
+        dates_headlines = sorted(tuple(zip(dates, score[0])), reverse=True, key=lambda x: x[0])
 
         for date_headline in dates_headlines:
-            formatted_date = date_headline[0].strftime("%y-%m-%d %H:%M")
+            formatted_date = date_headline[0].strftime("%y%m%d-%H%M")
             message += f"{formatted_date}: {date_headline[1]['title']}\n"
 
         message += "\n"
-        
-    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+
+    print(message)
+    await bot_send_message(message)
 ## /ISSUE 3
 
 @dp.message_handler(commands=['get_sentiment'])
 async def get_sentiment(message: types.Message):
-    header_amount = 100
+    header_amount = -100
     
     symbols = []
     
-    symbols_arg = message.get_args().split("-")
-    
-    if len(symbols_arg) == 1:
-        symbols_arg.append("R") # By default, only the recent headlines are shown
+    symbols_arg = message.get_args().split(" -")
+    print(symbols_arg)
         
     for symbol_arg in symbols_arg[1:]:
         symbol_arg = symbol_arg.strip()
-        if symbol_arg.upper() == "R":
-            header_amount = -abs(header_amount)
-        elif symbol_arg[:1].upper() == "H:":
-            if symbol_arg[:1] != symbol_arg:
+        print(symbol_arg)
+        if symbol_arg[:2].upper() == "H:":
+            if symbol_arg[:2] != symbol_arg:
                 try:
-                    header_amount = int(header_amount/abs(header_amount)*int(symbol_arg.split(":")[1]))
+                    header_amount = int(symbol_arg.split(":")[1])
                 except ValueError:
-                    pass
+                    await message_reply(message, f"Invalid number of headlines '-{symbol_arg}'.")
         else:
-            await message.reply(f"Invalid option '-{symbol_arg}'.")
+            await message_reply(message, f"Invalid option '-{symbol_arg}'.")
             return
         
     symbols = [symbol.strip().upper() for symbol in symbols_arg[0].split(',')]
@@ -370,13 +377,13 @@ async def get_sentiment(message: types.Message):
     companies = {}
 
     if not symbols:
-        await message.reply("Please provide at least one company symbol separated by commas.")
+        await message_reply(message, "Please provide at least one company symbol separated by commas.")
     else:
         for symbol in symbols:
             if verify_symbol(symbol):
                 companies[symbol] = ""  # No company name is stored
             else:
-                await message.reply(f"The symbol '{symbol}' is invalid.")
+                await message_reply(message, f"The symbol '{symbol}' is invalid.")
                 break
         else:   
             await analyze_sentiments_for_companies(companies, header_amount)
